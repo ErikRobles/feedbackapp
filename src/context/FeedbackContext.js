@@ -95,6 +95,7 @@ export const FeedbackProvider = ({ children }) => {
     });
   };
 
+  // Forcing git changes for Netlify
   // Set item to be updated
   const editFeedback = (item) => {
     setFeedbackEdit({

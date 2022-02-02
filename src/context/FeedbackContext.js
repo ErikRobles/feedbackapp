@@ -86,10 +86,8 @@ export const FeedbackProvider = ({ children }) => {
     const updatedFeedback = { ...updItem, id };
     await db.put(id, updatedFeedback);
 
-    const data = await response.json();
-
     setFeedback(
-      feedback.map((item) => (item.id === id ? { ...item, ...data } : item))
+      feedback.map((item) => (item.id === id ? updatedFeedback : item))
     );
     setFeedbackEdit({
       item: {},

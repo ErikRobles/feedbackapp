@@ -37,7 +37,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
    useEffect(() => {
     const fetchFeedback = async () => {
       try {
-        const response = await fetch('http://localhost:5000/feedback'); // Replace with backend URL
+        const response = await fetch('https://feedback-api-1gs7.onrender.com/feedback'); // Replace with backend URL
         if (!response.ok) throw new Error('Failed to fetch feedback data');
         const data = await response.json();
         setFeedback(data);
@@ -52,7 +52,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
   // Function to delete feedback
   const deleteFeedback = async (id: string): Promise<void> => {
     try {
-      const response = await fetch(`http://localhost:5000/feedback/${id}`, {
+      const response = await fetch(`https://feedback-api-1gs7.onrender.com/feedback/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Failed to delete feedback');
@@ -65,7 +65,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
   // Function to add feedback
   const addFeedback = async (newFeedback: Feedback): Promise<void> => {
     try {
-      const response = await fetch('http://localhost:5000/feedback', {
+      const response = await fetch('https://feedback-api-1gs7.onrender.com/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newFeedback),
@@ -81,7 +81,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
   // Function to update feedback
   const updateFeedback = async (id: string, updItem: Feedback): Promise<void> => {
     try {
-      const response = await fetch(`http://localhost:5000/feedback/${id}`, {
+      const response = await fetch(`https://feedback-api-1gs7.onrender.com/feedback/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updItem),

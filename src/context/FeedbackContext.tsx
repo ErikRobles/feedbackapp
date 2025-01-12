@@ -86,10 +86,10 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
 
   const addFeedback = async (newFeedback: Feedback): Promise<void> => {
     if (!passwordVerified) {
-      requirePassword();
+      setShowPasswordPopup(true); // Trigger the popup
       return;
     }
-
+  
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/feedback`, {
         method: 'POST',
@@ -98,15 +98,16 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
         },
         body: JSON.stringify(newFeedback),
       });
-
+  
       if (!response.ok) throw new Error('Failed to add feedback');
-
+  
       const data = await response.json();
       setFeedback((prevFeedback) => [data, ...prevFeedback]);
     } catch (error) {
       console.error('Error adding feedback:', error);
     }
   };
+  
 
   const updateFeedback = async (id: string, updItem: Feedback): Promise<void> => {
     try {

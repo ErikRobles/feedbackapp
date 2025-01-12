@@ -1,43 +1,42 @@
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { Feedback } from '../types/feedbackTypes';
 
-// Define the FeedbackEdit type
 interface FeedbackEdit {
   item: Feedback | {};
   edit: boolean;
 }
 
-// Define the context type
 interface FeedbackContextType {
   feedback: Feedback[];
   feedbackEdit: FeedbackEdit;
   deleteFeedback: (id: string) => void;
-  addFeedback: (newFeedback: Feedback) => void;
-  updateFeedback: (id: string, updItem: Feedback) => void;
+  addFeedback: (newFeedback: Feedback) => Promise<void>;
+  updateFeedback: (id: string, updItem: Feedback) => Promise<void>;
   editFeedback: (item: Feedback) => void;
+  passwordVerified: boolean;
+  showPasswordPopup: boolean;
+  passwordError: string | null;
+  verifyPassword: (password: string) => void;
+  setShowPasswordPopup: (value: boolean) => void;
 }
 
-// Initialize the context with null (before the provider sets the value)
 export const FeedbackContext = createContext<FeedbackContextType | null>(null);
 
-// Props type for the FeedbackProvider
 interface FeedbackProviderProps {
   children: ReactNode;
 }
 
 export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) => {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
-  const [feedbackEdit, setFeedbackEdit] = useState<FeedbackEdit>({
-    item: {},
-    edit: false,
-  });
+  const [feedbackEdit, setFeedbackEdit] = useState<FeedbackEdit>({ item: {}, edit: false });
+  const [passwordVerified, setPasswordVerified] = useState(false);
+  const [showPasswordPopup, setShowPasswordPopup] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
-   // Fetch feedback data from the backend
-   useEffect(() => {
+  useEffect(() => {
     const fetchFeedback = async () => {
       try {
-        const response = await fetch('https://feedback-api-1gs7.onrender.com/feedback'); // Replace with backend URL
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/feedback`);
         if (!response.ok) throw new Error('Failed to fetch feedback data');
         const data = await response.json();
         setFeedback(data);
@@ -49,10 +48,33 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
     fetchFeedback();
   }, []);
 
-  // Function to delete feedback
+  const requirePassword = () => {
+    setShowPasswordPopup(true);
+  };
+
+  const verifyPassword = async (password: string) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/verify-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      if (!response.ok) throw new Error('Invalid password');
+
+      setPasswordVerified(true);
+      setShowPasswordPopup(false);
+      setPasswordError(null);
+    } catch {
+      setPasswordError('Sorry, you are not authorized to perform this operation.');
+    }
+  };
+
   const deleteFeedback = async (id: string): Promise<void> => {
     try {
-      const response = await fetch(`https://feedback-api-1gs7.onrender.com/feedback/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/feedback/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Failed to delete feedback');
@@ -61,27 +83,34 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
       console.error('Error deleting feedback:', error);
     }
   };
-  
-  // Function to add feedback
+
   const addFeedback = async (newFeedback: Feedback): Promise<void> => {
+    if (!passwordVerified) {
+      requirePassword();
+      return;
+    }
+
     try {
-      const response = await fetch('https://feedback-api-1gs7.onrender.com/feedback', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/feedback`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(newFeedback),
       });
+
       if (!response.ok) throw new Error('Failed to add feedback');
+
       const data = await response.json();
-      setFeedback([data, ...feedback]);
+      setFeedback((prevFeedback) => [data, ...prevFeedback]);
     } catch (error) {
       console.error('Error adding feedback:', error);
     }
   };
 
-  // Function to update feedback
   const updateFeedback = async (id: string, updItem: Feedback): Promise<void> => {
     try {
-      const response = await fetch(`https://feedback-api-1gs7.onrender.com/feedback/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/feedback/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updItem),
@@ -93,14 +122,9 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
       console.error('Error updating feedback:', error);
     }
   };
-  
 
-  // Function to edit feedback
   const editFeedback = (item: Feedback): void => {
-    setFeedbackEdit({
-      item,
-      edit: true,
-    });
+    setFeedbackEdit({ item, edit: true });
   };
 
   return (
@@ -112,6 +136,11 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
         addFeedback,
         updateFeedback,
         editFeedback,
+        passwordVerified,
+        showPasswordPopup,
+        passwordError,
+        verifyPassword,
+        setShowPasswordPopup,
       }}
     >
       {children}

@@ -69,7 +69,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
   };
 
   const addFeedback = async (newFeedback: Feedback): Promise<void> => {
-    if (!passwordVerified || !authToken) {
+    if (!authToken) {
       setShowPasswordPopup(true);
       return;
     }
@@ -79,7 +79,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
+          "Authorization": `Bearer ${authToken}`,
         },
         body: JSON.stringify(newFeedback),
       });
@@ -96,7 +96,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
   
   const verifyPassword = async (password: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/verify-password`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/feedback/verify-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -113,7 +113,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
       setShowPasswordPopup(false);
       setPasswordError(null);
     } catch (error) {
-      setPasswordError('Sorry, you are not authorized to perform this operation.');
+      setPasswordError('Invalid password. Please try again.');
     }
   };
   

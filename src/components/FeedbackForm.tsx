@@ -109,7 +109,7 @@ const FeedbackForm: React.FC = () => {
         <PasswordPopup
           onSubmit={verifyPassword}
           onClose={handleClosePopup}
-          passwordError={passwordError}
+          errorMessage={passwordError}
         />
       )}
     </>

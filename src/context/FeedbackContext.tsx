@@ -70,7 +70,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
 
   const addFeedback = async (newFeedback: Feedback): Promise<void> => {
     if (!passwordVerified || !authToken) {
-      setShowPasswordPopup(true); // Trigger the popup
+      setShowPasswordPopup(true);
       return;
     }
   
@@ -79,7 +79,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`, // Include the token or password
+          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify(newFeedback),
       });
@@ -92,6 +92,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
       console.error('Error adding feedback:', error);
     }
   };
+  
   
   const verifyPassword = async (password: string) => {
     try {

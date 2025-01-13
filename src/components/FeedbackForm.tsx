@@ -81,6 +81,10 @@ const FeedbackForm: React.FC = () => {
     }
   };
 
+  const handleClosePopup = () => {
+    setShowPasswordPopup(false);
+  };
+
   return (
     <>
       <Card>
@@ -104,6 +108,7 @@ const FeedbackForm: React.FC = () => {
       {showPasswordPopup && (
         <PasswordPopup
           onSubmit={verifyPassword}
+          onClose={handleClosePopup}
           passwordError={passwordError}
         />
       )}

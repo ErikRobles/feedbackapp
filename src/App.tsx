@@ -5,7 +5,6 @@ import FeedbackList from './components/FeedbackList';
 import FeedbackStats from './components/FeedbackStats';
 import FeedbackForm from './components/FeedbackForm';
 import AboutPage from './pages/AboutPage';
-import { FeedbackProvider } from './context/FeedbackContext';
 import AboutIconLink from './components/AboutIconLink';
 import PasswordPopup from './components/PasswordPopup';
 import FeedbackContext from './context/FeedbackContext';
@@ -39,7 +38,7 @@ const App: React.FC = () => {
                   <PasswordPopup
                     onSubmit={verifyPassword}
                     onClose={() => setShowPasswordPopup(false)}
-                    errorMessage={passwordError}
+                    passwordError={passwordError}
                   />
                 )}
               </>

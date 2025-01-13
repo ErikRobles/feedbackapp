@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 
 interface PasswordPopupProps {
   onSubmit: (password: string) => void;
+  onClose: () => void;
   passwordError: string | null;
 }
 
-const PasswordPopup: React.FC<PasswordPopupProps> = ({ onSubmit, passwordError }) => {
+const PasswordPopup: React.FC<PasswordPopupProps> = ({ onSubmit, passwordError, onClose }) => {
   const [password, setPassword] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -24,6 +25,9 @@ const PasswordPopup: React.FC<PasswordPopupProps> = ({ onSubmit, passwordError }
           placeholder="Enter password"
         />
         <button type="submit">Submit</button>
+        <button type="button" onClick={onClose}>
+          Cancel
+        </button>
         {passwordError && <p className="error">{passwordError}</p>}
       </form>
     </div>

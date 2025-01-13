@@ -5,14 +5,14 @@ import Button from './shared/Button';
 import RatingSelect from './RatingSelect';
 import FeedbackContext from '../context/FeedbackContext';
 import { Feedback } from '../types/feedbackTypes';
-import { v4 as uuidv4 } from 'uuid';
-
+import PasswordPopup from './PasswordPopup'; // Import your popup component
 
 const FeedbackForm: React.FC = () => {
   const [text, setText] = useState<string>('');
   const [btnDisabled, setBtnDisabled] = useState<boolean>(true);
   const [rating, setRating] = useState<number>(10);
   const [message, setMessage] = useState<string | null>(null);
+  const [pendingFeedback, setPendingFeedback] = useState<Feedback | null>(null); // Store pending feedback
 
   const feedbackContext = useContext(FeedbackContext);
 
@@ -20,7 +20,15 @@ const FeedbackForm: React.FC = () => {
     throw new Error('FeedbackContext must be used within a FeedbackProvider');
   }
 
-  const { addFeedback, feedbackEdit, updateFeedback } = feedbackContext;
+  const {
+    addFeedback,
+    feedbackEdit,
+    updateFeedback,
+    showPasswordPopup,
+    verifyPassword,
+    passwordError,
+    setShowPasswordPopup,
+  } = feedbackContext;
 
   useEffect(() => {
     if (feedbackEdit.edit === true && isFeedback(feedbackEdit.item)) {
@@ -29,6 +37,14 @@ const FeedbackForm: React.FC = () => {
       setRating(feedbackEdit.item.rating);
     }
   }, [feedbackEdit]);
+
+  useEffect(() => {
+    if (!showPasswordPopup && pendingFeedback) {
+      // Retry form submission after popup is closed
+      addFeedback(pendingFeedback);
+      setPendingFeedback(null); // Clear pending feedback
+    }
+  }, [showPasswordPopup, pendingFeedback, addFeedback]);
 
   const handleTextChange = (e: ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
@@ -49,15 +65,16 @@ const FeedbackForm: React.FC = () => {
     e.preventDefault();
     if (text.trim().length > 10) {
       const newFeedback: Feedback = {
-        id: uuidv4(), // Generates a string ID
+        id: crypto.randomUUID(), // Generates a string ID
         text,
         rating,
       };
 
       if (feedbackEdit.edit === true && isFeedback(feedbackEdit.item)) {
-        updateFeedback(feedbackEdit.item.id, newFeedback); 
+        updateFeedback(feedbackEdit.item.id, newFeedback);
       } else {
-        addFeedback(newFeedback);
+        setPendingFeedback(newFeedback); // Store feedback temporarily
+        setShowPasswordPopup(true); // Trigger the password popup
       }
 
       setText('');
@@ -65,24 +82,32 @@ const FeedbackForm: React.FC = () => {
   };
 
   return (
-    <Card>
-      <form onSubmit={handleSubmit}>
-        <h2>How would you rate your service with us?</h2>
-        <RatingSelect select={(rating: number) => setRating(rating)} />
-        <div className="input-group">
-          <input
-            onChange={handleTextChange}
-            type="text"
-            placeholder="Write a review"
-            value={text}
-          />
-          <Button type="submit" isDisabled={btnDisabled}>
-            Send
-          </Button>
-        </div>
-        {message && <div className="message">{message}</div>}
-      </form>
-    </Card>
+    <>
+      <Card>
+        <form onSubmit={handleSubmit}>
+          <h2>How would you rate your service with us?</h2>
+          <RatingSelect select={(rating: number) => setRating(rating)} />
+          <div className="input-group">
+            <input
+              onChange={handleTextChange}
+              type="text"
+              placeholder="Write a review"
+              value={text}
+            />
+            <Button type="submit" isDisabled={btnDisabled}>
+              Send
+            </Button>
+          </div>
+          {message && <div className="message">{message}</div>}
+        </form>
+      </Card>
+      {showPasswordPopup && (
+        <PasswordPopup
+          onSubmit={verifyPassword}
+          passwordError={passwordError}
+        />
+      )}
+    </>
   );
 };
 

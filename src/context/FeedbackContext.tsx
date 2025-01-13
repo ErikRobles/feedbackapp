@@ -14,6 +14,7 @@ interface FeedbackContextType {
   updateFeedback: (id: string, updItem: Feedback) => Promise<void>;
   editFeedback: (item: Feedback) => void;
   passwordVerified: boolean;
+  authToken: string | null;
   showPasswordPopup: boolean;
   passwordError: string | null;
   verifyPassword: (password: string) => void;
@@ -32,6 +33,8 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
   const [passwordVerified, setPasswordVerified] = useState(false);
   const [showPasswordPopup, setShowPasswordPopup] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(null); // State to store the token
+
 
   useEffect(() => {
     const fetchFeedback = async () => {
@@ -52,26 +55,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
     setShowPasswordPopup(true);
   };
 
-  const verifyPassword = async (password: string) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/verify-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ password }),
-      });
-
-      if (!response.ok) throw new Error('Invalid password');
-
-      setPasswordVerified(true);
-      setShowPasswordPopup(false);
-      setPasswordError(null);
-    } catch {
-      setPasswordError('Sorry, you are not authorized to perform this operation.');
-    }
-  };
-
+  
   const deleteFeedback = async (id: string): Promise<void> => {
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/feedback/${id}`, {
@@ -85,7 +69,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
   };
 
   const addFeedback = async (newFeedback: Feedback): Promise<void> => {
-    if (!passwordVerified) {
+    if (!passwordVerified || !authToken) {
       setShowPasswordPopup(true); // Trigger the popup
       return;
     }
@@ -95,16 +79,40 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`, // Include the token or password
         },
         body: JSON.stringify(newFeedback),
       });
   
       if (!response.ok) throw new Error('Failed to add feedback');
   
-      const data = await response.json();
+      const data: Feedback = await response.json();
       setFeedback((prevFeedback) => [data, ...prevFeedback]);
     } catch (error) {
       console.error('Error adding feedback:', error);
+    }
+  };
+  
+  const verifyPassword = async (password: string) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/verify-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      });
+  
+      if (!response.ok) throw new Error('Invalid password');
+  
+      // Parse the JSON response
+      const data: { token: string } = await response.json(); // Ensure the token is typed
+      setAuthToken(data.token); // Now `data.token` will be accessible
+      setPasswordVerified(true);
+      setShowPasswordPopup(false);
+      setPasswordError(null);
+    } catch (error) {
+      setPasswordError('Sorry, you are not authorized to perform this operation.');
     }
   };
   
@@ -138,6 +146,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
         updateFeedback,
         editFeedback,
         passwordVerified,
+        authToken,
         showPasswordPopup,
         passwordError,
         verifyPassword,

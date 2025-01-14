@@ -1,5 +1,5 @@
+import React, { useContext } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import {useContext} from 'react'
 import Header from './components/Header';
 import FeedbackList from './components/FeedbackList';
 import FeedbackStats from './components/FeedbackStats';
@@ -9,8 +9,6 @@ import AboutIconLink from './components/AboutIconLink';
 import PasswordPopup from './components/PasswordPopup';
 import FeedbackContext from './context/FeedbackContext';
 
-
-
 const App: React.FC = () => {
   const feedbackContext = useContext(FeedbackContext);
 
@@ -18,9 +16,8 @@ const App: React.FC = () => {
     throw new Error('FeedbackContext must be used within a FeedbackProvider');
   }
 
-  const { showPasswordPopup, verifyPassword, passwordError, setShowPasswordPopup } =
+  const { showPasswordPopup, setShowPasswordPopup, verifyPassword, passwordError } =
     feedbackContext;
-
 
   return (
     <Router>
@@ -34,13 +31,6 @@ const App: React.FC = () => {
                 <FeedbackForm />
                 <FeedbackStats />
                 <FeedbackList />
-                {showPasswordPopup && (
-                  <PasswordPopup
-                    onSubmit={verifyPassword}
-                    onClose={() => setShowPasswordPopup(false)}
-                    passwordError={passwordError}
-                  />
-                )}
               </>
             }
           />
@@ -48,6 +38,13 @@ const App: React.FC = () => {
         </Routes>
         <AboutIconLink />
       </div>
+      {showPasswordPopup && (
+        <PasswordPopup
+          onSubmit={verifyPassword}
+          onClose={() => setShowPasswordPopup(false)}
+          errorMessage={passwordError}
+        />
+      )}
     </Router>
   );
 };

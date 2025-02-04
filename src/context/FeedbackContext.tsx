@@ -125,7 +125,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
       setShowPasswordPopup(true);
       return;
     }
-
+  
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/feedback`, {
         method: 'POST',
@@ -135,19 +135,25 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
         },
         body: JSON.stringify(newFeedback),
       });
-
+  
       if (!response.ok) throw new Error('Failed to add feedback');
-
-      const data: Feedback = await response.json();
-      
-      // ✅ Ensure the new feedback item has an `id`
-      const formattedData = { ...data, id: data._id };
+  
+      const data = await response.json();
+      console.log('✅ Added feedback:', data); // ✅ Debugging
+  
+      // ✅ Ensure `id` is correctly assigned
+      const formattedData: Feedback = {
+        id: data.id || data._id, // ✅ No random UUIDs
+        text: data.text,
+        rating: data.rating,
+      };
+  
       setFeedback((prevFeedback) => [formattedData, ...prevFeedback]);
     } catch (error) {
-      console.error('Error adding feedback:', error);
+      console.error('❌ Error adding feedback:', error);
     }
   };
-
+  
   /**
    * Update existing feedback.
    */
@@ -156,7 +162,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
       setShowPasswordPopup(true);
       return;
     }
-
+  
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/feedback/${id}`, {
         method: 'PUT',
@@ -166,17 +172,20 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
         },
         body: JSON.stringify(updItem),
       });
-
+  
       if (!response.ok) throw new Error('Failed to update feedback');
-
+  
       const data = await response.json();
-      const formattedData = { ...data, id: data._id }; // ✅ Ensure consistent `id`
-
-      setFeedback((items) => items.map((item) => (item.id === id ? formattedData : item)));
+      console.log('✅ Updated feedback:', data); // ✅ Debugging
+  
+      setFeedback((items) =>
+        items.map((item) => (item.id === id ? { ...item, ...data } : item))
+      );
     } catch (error) {
-      console.error('Error updating feedback:', error);
+      console.error('❌ Error updating feedback:', error);
     }
   };
+  
 
   /**
    * Delete feedback by ID.

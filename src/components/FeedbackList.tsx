@@ -20,9 +20,9 @@ const FeedbackList: React.FC = () => {
   return (
     <div className="feedback-list">
       <AnimatePresence>
-        {feedback.map((item: Feedback) => (
+        {feedback.map((item: Feedback, index: number) => (
           <motion.div
-            key={item.id}
+          key={item.id || `fallback-key-${index}`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

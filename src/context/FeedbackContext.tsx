@@ -36,8 +36,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
   const [authToken, setAuthToken] = useState<string | null>(null); // Stores the JWT
 
   /**
-   * Optionally, restore a token from localStorage so the user
-   * doesn't need to re-enter the password on page refresh.
+   * Restore token from localStorage on page refresh.
    */
   useEffect(() => {
     const existingToken = localStorage.getItem('authToken');
@@ -49,26 +48,22 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
 
   /**
    * Fetch feedback from the backend.
-   * Since we want to protect GET as well, we must have a token
-   * (otherwise, the request will fail with 401 if your backend requires it).
    */
   useEffect(() => {
     const fetchFeedback = async () => {
       if (!authToken) {
-        // If no token, show the password popup (forces user to enter it).
         setShowPasswordPopup(true);
         return;
       }
       try {
-        // Pass the token in headers for the GET request.
         const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/feedback`, {
           method: 'GET',
           headers: {
             Authorization: `Bearer ${authToken}`,
           },
         });
+
         if (!response.ok) {
-          // If the token is invalid or expired, reset and show popup again:
           if (response.status === 401) {
             setAuthToken(null);
             setPasswordVerified(false);
@@ -77,8 +72,16 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
           }
           throw new Error('Failed to fetch feedback data');
         }
+
         const data = await response.json();
-        setFeedback(data);
+
+        // ✅ Ensure each item has `id` instead of `_id`
+        const formattedData = data.map((item: any) => ({
+          ...item,
+          id: item._id, // Map MongoDB _id to id
+        }));
+
+        setFeedback(formattedData);
       } catch (error) {
         console.error('Error fetching feedback:', error);
       }
@@ -88,8 +91,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
   }, [authToken]);
 
   /**
-   * Verify password: calls backend "/verify-password" route.
-   * If valid, we get a JWT token. Store that token in state (and optionally in localStorage).
+   * Verify password and get JWT token.
    */
   const verifyPassword = async (password: string) => {
     try {
@@ -105,7 +107,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
 
       const data: { token: string } = await response.json();
       setAuthToken(data.token);
-      localStorage.setItem('authToken', data.token); // Persist token
+      localStorage.setItem('authToken', data.token);
       setPasswordVerified(true);
       setShowPasswordPopup(false);
       setPasswordError(null);
@@ -116,7 +118,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
   };
 
   /**
-   * Create new feedback (protected: requires token).
+   * Create new feedback.
    */
   const addFeedback = async (newFeedback: Feedback): Promise<void> => {
     if (!authToken) {
@@ -137,14 +139,17 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
       if (!response.ok) throw new Error('Failed to add feedback');
 
       const data: Feedback = await response.json();
-      setFeedback((prevFeedback) => [data, ...prevFeedback]);
+      
+      // ✅ Ensure the new feedback item has an `id`
+      const formattedData = { ...data, id: data._id };
+      setFeedback((prevFeedback) => [formattedData, ...prevFeedback]);
     } catch (error) {
       console.error('Error adding feedback:', error);
     }
   };
 
   /**
-   * Update existing feedback by ID (protected: requires token).
+   * Update existing feedback.
    */
   const updateFeedback = async (id: string, updItem: Feedback): Promise<void> => {
     if (!authToken) {
@@ -161,22 +166,28 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
         },
         body: JSON.stringify(updItem),
       });
+
       if (!response.ok) throw new Error('Failed to update feedback');
+
       const data = await response.json();
-      setFeedback((items) => items.map((item) => (item.id === id ? data : item)));
+      const formattedData = { ...data, id: data._id }; // ✅ Ensure consistent `id`
+
+      setFeedback((items) => items.map((item) => (item.id === id ? formattedData : item)));
     } catch (error) {
       console.error('Error updating feedback:', error);
     }
   };
 
   /**
-   * Delete feedback by ID (protected: requires token).
+   * Delete feedback by ID.
    */
   const deleteFeedback = async (id: string): Promise<void> => {
     if (!authToken) {
       setShowPasswordPopup(true);
       return;
     }
+
+    console.log('Deleting feedback with ID:', id);
 
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/feedback/${id}`, {
@@ -185,7 +196,9 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
           Authorization: `Bearer ${authToken}`,
         },
       });
+
       if (!response.ok) throw new Error('Failed to delete feedback');
+
       setFeedback((items) => items.filter((item) => item.id !== id));
     } catch (error) {
       console.error('Error deleting feedback:', error);
@@ -193,7 +206,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
   };
 
   /**
-   * Set up editing feedback (if you have an edit form).
+   * Set up editing feedback.
    */
   const editFeedback = (item: Feedback): void => {
     setFeedbackEdit({ item, edit: true });

@@ -23,7 +23,13 @@ const FeedbackItem: React.FC<FeedbackItemProps> = ({ item }) => {
       <button className="edit" onClick={() => editFeedback(item)}>
         <FaEdit color="purple" />
       </button>
-      <button className="close" onClick={() => deleteFeedback(item.id)}>
+      <button className="close" onClick={() => {
+        if (item.id) {
+          deleteFeedback(item.id);
+        } else {
+          console.error("Error: Trying to delete an item without an ID", item);
+        }
+      }}>
         <FaTimes color="purple" />
       </button>
       <div className="text-display">{item.text}</div>

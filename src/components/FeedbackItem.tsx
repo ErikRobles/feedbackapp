@@ -20,12 +20,16 @@ const FeedbackItem: React.FC<FeedbackItemProps> = ({ item }) => {
   return (
     <Card>
       <div className="num-display">{item.rating}</div>
-      <button className="edit" onClick={() => editFeedback(item)}>
+      <button className="edit" onClick={() => {
+        console.log('📝 Edit button clicked'); 
+        editFeedback(item);
+      }}>
         <FaEdit color="purple" />
       </button>
       <button className="close" onClick={() => {
-        if (item.id) {
-          deleteFeedback(item.id);
+        const feedbackId = item.id || item._id;
+        if (feedbackId) {
+          deleteFeedback(feedbackId);
         } else {
           console.error("Error: Trying to delete an item without an ID", item);
         }

@@ -33,7 +33,11 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
   const [passwordVerified, setPasswordVerified] = useState(false);
   const [showPasswordPopup, setShowPasswordPopup] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [authToken, setAuthToken] = useState<string | null>(null); // Stores the JWT
+  const [authToken, setAuthToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    console.log('🔄 FeedbackList re-rendered with feedback:', feedback);
+  }, [feedback]);
 
   /**
    * Restore token from localStorage on page refresh.
@@ -55,6 +59,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
         setShowPasswordPopup(true);
         return;
       }
+
       try {
         const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/feedback`, {
           method: 'GET',
@@ -66,7 +71,6 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
         if (!response.ok) {
           if (response.status === 401) {
             setAuthToken(null);
-            setPasswordVerified(false);
             localStorage.removeItem('authToken');
             setShowPasswordPopup(true);
           }
@@ -74,16 +78,9 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
         }
 
         const data = await response.json();
-
-        // ✅ Ensure each item has `id` instead of `_id`
-        const formattedData = data.map((item: any) => ({
-          ...item,
-          id: item._id, // Map MongoDB _id to id
-        }));
-
-        setFeedback(formattedData);
+        setFeedback(data);
       } catch (error) {
-        console.error('Error fetching feedback:', error);
+        console.error('❌ Error fetching feedback:', error);
       }
     };
 
@@ -97,9 +94,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/feedback/verify-password`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),
       });
 
@@ -127,6 +122,8 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
     }
   
     try {
+      console.log('🔍 Adding new feedback:', newFeedback); // ✅ Debugging
+  
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/feedback`, {
         method: 'POST',
         headers: {
@@ -136,24 +133,27 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
         body: JSON.stringify(newFeedback),
       });
   
+      console.log('🔍 Server response status:', response.status); // ✅ Debugging
+  
       if (!response.ok) throw new Error('Failed to add feedback');
   
       const data = await response.json();
-      console.log('✅ Added feedback:', data); // ✅ Debugging
+      console.log('✅ Feedback added from API:', data); // ✅ Debugging
   
-      // ✅ Ensure `id` is correctly assigned
       const formattedData: Feedback = {
-        id: data.id || data._id, // ✅ No random UUIDs
+        id: data.id || data._id, // ✅ Handle MongoDB `_id`
         text: data.text,
         rating: data.rating,
       };
   
+      // ✅ Ensure UI updates immediately
       setFeedback((prevFeedback) => [formattedData, ...prevFeedback]);
+      console.log('🔄 UI updated with new feedback');
     } catch (error) {
       console.error('❌ Error adding feedback:', error);
     }
-  };
-  
+  };  
+
   /**
    * Update existing feedback.
    */
@@ -164,23 +164,46 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
     }
   
     try {
+      console.log('🔍 Updating feedback with ID:', id, 'New data:', updItem);
+  
+      // ✅ Convert `_id` to `id` before updating state
+      const formattedUpdate = {
+        id: updItem.id || updItem._id || id,
+        text: updItem.text,
+        rating: updItem.rating,
+      };
+  
+      // ✅ Optimistically update UI before API call
+      setFeedback((prevFeedback) =>
+        prevFeedback.map((item) =>
+          (item.id || item._id) === id ? { ...item, ...formattedUpdate } : item
+        )
+      );
+  
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/feedback/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify(updItem),
+        body: JSON.stringify(formattedUpdate),
       });
   
       if (!response.ok) throw new Error('Failed to update feedback');
   
       const data = await response.json();
-      console.log('✅ Updated feedback:', data); // ✅ Debugging
+      console.log('✅ Updated feedback from API:', data);
   
-      setFeedback((items) =>
-        items.map((item) => (item.id === id ? { ...item, ...data } : item))
+      // ✅ Normalize API response to ensure React detects changes
+      setFeedback((prevFeedback) =>
+        prevFeedback.map((item) =>
+          (item.id || item._id) === (data.id || data._id)
+            ? { ...item, ...data, id: data.id || data._id }
+            : item
+        )
       );
+  
+      console.log('🔄 UI updated with new feedback');
     } catch (error) {
       console.error('❌ Error updating feedback:', error);
     }
@@ -195,30 +218,47 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
       setShowPasswordPopup(true);
       return;
     }
-
-    console.log('Deleting feedback with ID:', id);
-
+  
     try {
+      console.log('🗑 Deleting feedback with ID:', id); // ✅ Debugging
+  
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/feedback/${id}`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
+        headers: { Authorization: `Bearer ${authToken}` },
       });
-
+  
+      console.log('🔍 Server response status:', response.status); // ✅ Debugging
+  
       if (!response.ok) throw new Error('Failed to delete feedback');
-
-      setFeedback((items) => items.filter((item) => item.id !== id));
+  
+      // ✅ Ensure React detects the change
+      setFeedback((prevFeedback) => {
+        const updatedFeedback = prevFeedback.filter(
+          (item) => (item.id || item._id) !== id
+        );
+        return [...updatedFeedback]; // ✅ Create a new array reference
+      });
+  
+      console.log('✅ Successfully deleted feedback:', id);
     } catch (error) {
-      console.error('Error deleting feedback:', error);
+      console.error('❌ Error deleting feedback:', error);
     }
   };
+  
 
   /**
    * Set up editing feedback.
    */
   const editFeedback = (item: Feedback): void => {
-    setFeedbackEdit({ item, edit: true });
+    console.log('📝 Edit button clicked for:', item);
+
+    setFeedbackEdit({
+      item: {
+        ...item,
+        id: item.id || item._id, // ✅ Ensure id is always set
+      },
+      edit: true,
+    });
   };
 
   return (

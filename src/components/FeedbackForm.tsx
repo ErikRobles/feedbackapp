@@ -28,6 +28,7 @@ const FeedbackForm: React.FC = () => {
     verifyPassword,
     passwordError,
     setShowPasswordPopup,
+    authToken,
   } = feedbackContext;
 
   useEffect(() => {
@@ -63,23 +64,36 @@ const FeedbackForm: React.FC = () => {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+  
+    console.log('📝 Submitting feedback:', { text, rating, authToken });
+  
     if (text.trim().length > 10) {
       const newFeedback: Feedback = {
-        id: crypto.randomUUID(), // Generates a string ID
+        id: crypto.randomUUID(),
         text,
         rating,
       };
-
+  
       if (feedbackEdit.edit === true && isFeedback(feedbackEdit.item)) {
+        console.log('✏️ Updating feedback:', feedbackEdit.item.id);
         updateFeedback(feedbackEdit.item.id, newFeedback);
       } else {
-        setPendingFeedback(newFeedback); // Store feedback temporarily
-        setShowPasswordPopup(true); // Trigger the password popup
+        if (!authToken) {
+          console.warn('🔐 No auth token. Showing password popup...');
+          setPendingFeedback(newFeedback);
+          setShowPasswordPopup(true);
+        } else {
+          console.log('🚀 Authenticated! Submitting feedback:', newFeedback);
+          addFeedback(newFeedback);
+        }
       }
-
+  
       setText('');
+    } else {
+      console.warn('⚠️ Message too short! Not submitting.');
     }
   };
+  
 
   const handleClosePopup = () => {
     setShowPasswordPopup(false);

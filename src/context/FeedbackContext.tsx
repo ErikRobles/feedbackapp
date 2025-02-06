@@ -13,6 +13,7 @@ interface FeedbackContextType {
   addFeedback: (newFeedback: Feedback) => Promise<void>;
   updateFeedback: (id: string, updItem: Feedback) => Promise<void>;
   editFeedback: (item: Feedback) => void;
+  isLoading: boolean;
   passwordVerified: boolean;
   authToken: string | null;
   showPasswordPopup: boolean;
@@ -28,6 +29,7 @@ interface FeedbackProviderProps {
 }
 
 export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) => {
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [feedbackEdit, setFeedbackEdit] = useState<FeedbackEdit>({ item: {}, edit: false });
   const [passwordVerified, setPasswordVerified] = useState(false);
@@ -79,6 +81,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
 
         const data = await response.json();
         setFeedback(data);
+        setIsLoading(false);
       } catch (error) {
         console.error('❌ Error fetching feedback:', error);
       }
@@ -120,6 +123,9 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
       setShowPasswordPopup(true);
       return;
     }
+
+    setIsLoading(true);
+
   
     try {
       console.log('🔍 Adding new feedback:', newFeedback); // ✅ Debugging
@@ -146,8 +152,8 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
         rating: data.rating,
       };
   
-      // ✅ Ensure UI updates immediately
       setFeedback((prevFeedback) => [formattedData, ...prevFeedback]);
+      setIsLoading(false);
       console.log('🔄 UI updated with new feedback');
     } catch (error) {
       console.error('❌ Error adding feedback:', error);
@@ -162,7 +168,8 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
       setShowPasswordPopup(true);
       return;
     }
-  
+    setIsLoading(true);
+
     try {
       console.log('🔍 Updating feedback with ID:', id, 'New data:', updItem);
   
@@ -202,6 +209,8 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
             : item
         )
       );
+
+      setIsLoading(false);
   
       console.log('🔄 UI updated with new feedback');
     } catch (error) {
@@ -218,6 +227,9 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
       setShowPasswordPopup(true);
       return;
     }
+
+    setIsLoading(true);
+
   
     try {
       console.log('🗑 Deleting feedback with ID:', id); // ✅ Debugging
@@ -238,6 +250,8 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
         );
         return [...updatedFeedback]; // ✅ Create a new array reference
       });
+
+      setIsLoading(false);
   
       console.log('✅ Successfully deleted feedback:', id);
     } catch (error) {
@@ -270,6 +284,7 @@ export const FeedbackProvider: React.FC<FeedbackProviderProps> = ({ children }) 
         addFeedback,
         updateFeedback,
         editFeedback,
+        isLoading,
         passwordVerified,
         authToken,
         showPasswordPopup,
